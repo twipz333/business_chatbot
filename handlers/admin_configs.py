@@ -55,7 +55,6 @@ async def cmd_add_admin(message: Message, bot: AsyncTeleBot):
     else:
         fullname = ''
         contact = message.contact
-        print(contact)
         if contact.first_name:
             fullname = fullname + contact.first_name
         if contact.last_name:
@@ -64,8 +63,7 @@ async def cmd_add_admin(message: Message, bot: AsyncTeleBot):
                             'fullname': fullname,
                             'username': None,
                             'ps': " "}
-        log.info(f'method: cmd_add_admin, admin with id {text} was added')
-    print(db_admins.admins)
+        # log.info(f'method: cmd_add_admin, admin with id {text} was added')
 
 
 async def cmd_remove_admin(message: Message, bot: AsyncTeleBot):
@@ -142,7 +140,7 @@ def params_mapping(message_type: str, params: Dict) -> Dict:
     unwanted = set(map_list) - set(wanted)
     for key in unwanted:
         params.pop(key, None)
-    log.debug(f'method: params_mapping, params: {params}')
+    # log.debug(f'method: params_mapping, params: {params}')
     return params
 
 
@@ -162,15 +160,16 @@ def get_send_procedure(message_type: str, bot: AsyncTeleBot) -> Callable: #pylin
 
 
 def string_builder(**kwargs):
+    # username = kwargs['body']['entities'][len(kwargs['body']['entities'])-1]['user'].pop('username')
+    # user_id = kwargs['body']['entities'][len(kwargs['body']['entities'])-1]['user'].pop('id')
     text = f"{' '.join([tag for tag in kwargs.pop('tags', [])])}\n"\
     f"\n{kwargs.pop('text')}\n\n"\
     'Если вас заинтересовало данное предложение напишите:\n'\
-    f"[{kwargs.pop('username')}](tg://user?id={kwargs.pop('user_id')})\n\n"\
-    "_______________\n"\
-    f"{kwargs.pop('ps')}"
-    log.debug(f'method: string_builder, text: {text}')
+    # f"[{username}](tg://user?id={user_id})\n\n"\
+    # "_______________\n"\
+    # f"{kwargs.pop('ps')}"
+    # log.debug(f'method: string_builder, text: {text}')
     return text
-
 
 
 def parse_and_update(message_record: Document, **kwargs):
@@ -195,7 +194,7 @@ def parse_and_update(message_record: Document, **kwargs):
         'text': text,
         'flag': flag
         }, doc_ids=[message_record.doc_id])
-    log.debug(f'method: parse_and_update, memory: {memory}')
+    # log.debug(f'method: parse_and_update, memory: {memory}')
 
 def get_params_for_message(message_text: str, message: Message) -> Dict:
     """Метод возвращающий необходимые параметры для сообщения на основе типа сообщения.
@@ -215,7 +214,7 @@ def get_params_for_message(message_text: str, message: Message) -> Dict:
     'document': message.json.get('document', {}).get('file_id', None),
     'animation': message.json.get('animation', {}).get('file_id', None)
     }
-    log.debug(f'method: get_params_for_message, params: {params}')
+    # log.debug(f'method: get_params_for_message, params: {params}')
     return params_mapping(message.content_type, params)
 
 

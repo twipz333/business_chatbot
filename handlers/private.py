@@ -55,9 +55,9 @@ async def on_post_processing(call: CallbackQuery, bot: AsyncTeleBot):
     if call.data == 'accept':
         await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                             reply_markup=get_hashtag_markup())
-        log.info('method: on_post_processing'
-                 f'message with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was accepted',
-                 call.id, call.data, call.message)
+        # log.info('method: on_post_processing'
+        #          f'message with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was accepted',
+        #          call.id, call.data, call.message)
 
     elif call.data == 'decline':
         text = string_builder(**messages.get(doc_id=r))
@@ -65,16 +65,17 @@ async def on_post_processing(call: CallbackQuery, bot: AsyncTeleBot):
             await bot.edit_message_text(chat_id=call.from_user.id,
                                         message_id=call.message.id,
                                         text=f'{call.message.text}\n❌ОТКЛОНЕНО❌',)
-            log.info('method: on_post_processing'
-                      f'message with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was decline',
-                      call.id, call.data, call.message)
+            # log.info('method: on_post_processing'
+            #           f'message with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was decline',
+            #           call.id, call.data, call.message)
         else:
             await bot.edit_message_caption(chat_id=call.from_user.id,
                                            message_id=call.message.id,
                                            caption=f'{text}\n❌ОТКЛОНЕНО❌')
-            log.info('method: on_post_processing'
-                     f'caption with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was decline',
-                     call.id, call.data, call.message)
+            # log.info('method: on_post_processing'
+            #          f'caption with chat_id{call.message.chat.id} and message_Id {call.message.message.id} was decline',
+            #          call.id, call.data, call.message)
+
 
 async def on_hashtag_choose(call: CallbackQuery, bot: AsyncTeleBot):
     """Хендлер выбора хештегов новых сообщений.
@@ -83,23 +84,27 @@ async def on_hashtag_choose(call: CallbackQuery, bot: AsyncTeleBot):
         `call (CallbackQuery)`: Объект callback'а.
         `bot (AsyncTeleBot)`: Объект бота.
     """
-    log.info('method: on_hashtag_choose'
-             'message: callback data from callback query id %s is \'%s\'', call.id, call.data)
+    # log.info('method: on_hashtag_choose'
+    #          'message: callback data from callback query id %s is \'%s\'', call.id, call.data)
     # if (call.message.text and call.message.text[0] != '#') \
     #     or (call.message.caption and call.message.caption[0] != '#'):
     #     call.data = call.data + '\n'
     r = messages.get(Query().id == call.message.id)
-    log.debug('message: {}'.format(r))
+    # log.debug('message: {}'.format(r))
     tags = r['tags']
     tags.append(call.data)
-    log.debug('tags: {}'.format(tags))
+    # log.debug('tags: {}'.format(tags))
     _ = messages.update({'tags': tags },doc_ids=[r.doc_id])
-    log.debug('update: {}'.format(_))
+    # log.debug('update: {}'.format(_))
     text = string_builder(**messages.get(doc_id=r.doc_id))
-    
-    for entity in r['entities']:
-        cur = entity['offset']
-        messages.update({'entities': cur+len(call.data)},doc_ids=[r.doc_id])
+    print(r)
+    # for entity in r['entities']:
+    #     cur = entity['offset']
+    #     messages.update({'entities'[entity]: cur+len(call.data)},doc_ids=[r.doc_id])
+    for i in range(len(r['entities'])):
+        cur =r['entities'][i]['offset']
+        print(cur)
+        messages.update({'entities'[i]: cur + len(call.data)}, doc_ids=[r.doc_id])
 
     r = messages.get(Query().id == call.message.id)
 
@@ -117,9 +122,9 @@ async def on_hashtag_choose(call: CallbackQuery, bot: AsyncTeleBot):
                                        message_id=call.message.id,
                                        reply_markup=get_hashtag_markup(),
                                        caption_entities=r['entities'])
-        log.debug('method: on_hashtag_choose'
-                 'caption was edited, callback data from callback query id %s is \'%s\', current message: %s',
-                  call.id, call.data, call.message)
+        # log.debug('method: on_hashtag_choose'
+        #          'caption was edited, callback data from callback query id %s is \'%s\', current message: %s',
+        #           call.id, call.data, call.message)
 
 
 async def send_message_to_group(call: CallbackQuery, bot: AsyncTeleBot):
@@ -130,7 +135,7 @@ async def send_message_to_group(call: CallbackQuery, bot: AsyncTeleBot):
         `bot (AsyncTeleBot)`: Объект бота.
     """
     # text = call.message.text if call.message.text else call.message.caption
-    log.info('call message from user: %s', call.from_user.username)
+    # log.info('call message from user: %s', call.from_user.username)
     # if text is None:
     #     text = ''
     # for m in messages.all():
@@ -150,21 +155,18 @@ async def send_message_to_group(call: CallbackQuery, bot: AsyncTeleBot):
     #                                 f'[{username}](tg://user?id={user_id})\n')
     message_type = call.message.content_type
     text = string_builder(**messages.get(Query().id == call.message.id))
-
     params = get_params_for_message(text, call.message)
     params['chat_id'] = os.environ.get('CHAT_ID')
     if message_type == 'text':
         params['disable_web_page_preview'] = True
 
     # log.debug(F'params: {params[text]}')
-    print(params)
     await get_send_procedure(message_type, bot)(**params)
-    await bot.edit_message_reply_markup(call.message.chat.id,
-                                        message_id=call.message.message_id,
+    await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                         reply_markup='')
 
     result = messages.remove(Query().id == call.message.id)
-    log.debug(f'method: send_message_to_group,removed resulted message from query, message: {result}')
-    log.info('method: send_message_to_group'
-             'message: message with id %s '
-             'message: \'%s\' is sended', call.message.id, text)
+    # log.debug(f'method: send_message_to_group,removed resulted message from query, message: {result}')
+    # log.info('method: send_message_to_group'
+    #          'message: message with id %s '
+    #          'message: \'%s\' is sended', call.message.id, text)
